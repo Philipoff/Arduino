@@ -1,0 +1,57 @@
+#include "IRremote.h"
+#include "DHT.h"
+#define DHTPIN 6        // Номер пина датчика температуры
+DHT dht(DHTPIN, DHT11); // Инициализация датчика температуры
+int sensor_pin = A0;    // Аналоговый порт 0 для измерения влажносоти почвы
+int output_value ;      // Переменная для влажности почвы
+IRrecv irrecv(4); // указываем вывод, к которому подключен приемник
+
+decode_results results;
+bool a = HIGH;
+
+void setup() {
+  Serial.begin(9600); // выставляем скорость COM порта
+  Serial.println("Чтение данных с сервера...");
+  delay(2000);
+  irrecv.enableIRIn(); // запускаем прием
+  pinMode(12, OUTPUT);
+  pinMode(8, OUTPUT);
+  pinMode(2, OUTPUT);
+  dht.begin();
+}
+
+void loop() {
+  if ( irrecv.decode( &results )) { // если данные пришли
+    if (results.value == 16753245) // Если нажата кнопка 1 на пульте
+  { 
+      float h = dht.readHumidity();    // Измеряем влажность
+      float t = dht.readTemperature(); // Измеряем температуру
+      if (isnan(h) || isnan(t))        // Проверка. Если не удается считать показания, выводится «Ошибка считывания», и программа завершает работу
+      {     
+        Serial.println("Ошибка считывания");
+        return;
+      }
+      else
+      {
+      Serial.print("Влажность: ");
+      Serial.print(h);
+      Serial.print(" %\t");
+      Serial.print("Температура в помещении: ");
+      Serial.print(t);
+      Serial.println(" *C "); // Вывод показателей на экран
+  }
+    
+  }
+  if (results.value == 16736925) // Если нажали кнопку 2 на пульте
+  {
+    output_value= analogRead(sensor_pin);
+    Serial.print(output_value);
+    output_value = map(output_value, 400, 1000, 0, 100);
+    Serial.print(", Влажность почвы: ");
+    Serial.print(output_value);
+    Serial.println("%");
+    delay(1000);
+  }
+  irrecv.resume(); // принимаем следующую команду
+}
+}
